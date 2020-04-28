@@ -8,7 +8,7 @@ import './App.css';
 const WS_ADDR = 'http://localhost:8080'
 
 function App() {
-  const socket = socketIOClient(WS_ADDR)
+  // const socket = socketIOClient(WS_ADDR)
 
   return (
     <Arena></Arena>
