@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react'
 import { Stage, Layer, Rect, Text, Circle, Wedge } from 'react-konva'
 
 const moviment = {
-  SPEED: 3,
+  SPEED: 5,
   deltaX: {
     'up': 0,
     'down': 0,
@@ -25,6 +25,27 @@ const moviment = {
 
 // TODO move to util
 const getAngle = (p1, p2) => Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI
+
+const useAnimationFrame = callback => {
+  // Use useRef for mutable variables that we want to persist
+  // without triggering a re-render on their change
+  const requestRef = React.useRef();
+  const previousTimeRef = React.useRef();
+  
+  const animate = time => {
+    if (previousTimeRef.current != undefined) {
+      const deltaTime = time - previousTimeRef.current;
+      callback(deltaTime)
+    }
+    previousTimeRef.current = time;
+    requestRef.current = requestAnimationFrame(animate);
+  }
+  
+  React.useEffect(() => {
+    requestRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(requestRef.current);
+  }, []); // Make sure the effect runs only once
+}
 
 // TODO move to constraints or state
 const FPS = 60
@@ -58,6 +79,7 @@ function Player({mouse}) {
     rotation: 0
   })
 
+  useEffect(() => {
   const movePlayerByKey = value => 
     e => {
       const dir = MAP_KEY[e.code]
@@ -71,17 +93,19 @@ function Player({mouse}) {
 
   document.addEventListener('keydown', movePlayerByKey(1))
   document.addEventListener('keyup', movePlayerByKey(0))
+  return () => {
+    document.removeEventListener("keydown", movePlayerByKey);
+    document.removeEventListener("keyup", movePlayerByKey);
+  };
+}, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPlayer(prevPlayer => ({
-        ...prevPlayer,
-        x: prevPlayer.x + (prevPlayer.moviment['right'] * moviment.SPEED) - (prevPlayer.moviment['left'] * moviment.SPEED),
-        y: prevPlayer.y + (prevPlayer.moviment['down'] * moviment.SPEED) - (prevPlayer.moviment['up'] * moviment.SPEED),
-      }))
-    }, 1000/FPS);
-    return () => clearInterval(interval)
-  }, [])
+  useAnimationFrame(() => {
+    setPlayer(prevPlayer => ({
+      ...prevPlayer,
+      x: prevPlayer.x + (prevPlayer.moviment['right'] * moviment.SPEED) - (prevPlayer.moviment['left'] * moviment.SPEED),
+      y: prevPlayer.y + (prevPlayer.moviment['down'] * moviment.SPEED) - (prevPlayer.moviment['up'] * moviment.SPEED),
+    }))
+  })
 
   return (
     <>
